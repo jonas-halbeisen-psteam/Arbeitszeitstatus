@@ -33,10 +33,10 @@
 
         // Button configurations
         const buttons = [
-            { text: 'Button 1', color: '#1976d2', icon: '📋' },
-            { text: 'Button 2', color: '#2e7d32', icon: '⏰' },
-            { text: 'Button 3', color: '#ed6c02', icon: '📊' },
-            { text: 'Button 4', color: '#9c27b0', icon: '✓' }
+            { text: 'Kommen', color: '#1976d2', icon: '🏃‍♂️‍➡️' },
+            { text: 'Gehen', color: '#2e7d32', icon: '🏃‍♂️' },
+            { text: 'Pause Beginn', color: '#ed6c02', icon: '⏸️' },
+            { text: 'Pause Ende', color: '#9c27b0', icon: '⏯️' }
         ];
 
         // Create each button
@@ -47,13 +47,14 @@
             button.style.cssText = `
                 background-color: ${btnConfig.color};
                 color: white;
-                padding: 10px 16px;
+                padding: 6px 16px;
+                min-height: 36px;
                 border-radius: 4px;
                 border: none;
                 cursor: pointer;
-                font-size: 14px;
+                font-size: 16px;
                 font-weight: 500;
-                text-transform: uppercase;
+                text-transform: none;
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -103,10 +104,5 @@
             childList: true,
             subtree: true
         });
-
-        // Also try after a short delay
-        setTimeout(addExtraButtons, 1000);
-        setTimeout(addExtraButtons, 2000);
-        setTimeout(addExtraButtons, 3000);
     }
 })();
