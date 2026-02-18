@@ -11,6 +11,69 @@
 (function() {
     'use strict';
 
+    // Fetch clocking data from the API
+    async function fetchClockingData() {
+        try {
+            const response = await fetch('/horizon/modules/pzw/widgets/clockings', {
+                method: 'GET',
+                credentials: 'same-origin',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log('Clocking data fetched:', data);
+            return data;
+        } catch (error) {
+            console.error('Error fetching clocking data:', error);
+            return null;
+        }
+    }
+
+    // Parse the clocking data to get useful information
+    function parseClockingData(data) {
+        if (!data) return null;
+
+        const parsed = {
+            canClockTime: data.canClockTime,
+            canManuallySpecifyDateAndTime: data.canManuallySpecifyDateAndTime,
+            selectableKeys: data.selectableTimeBookingKeys || [],
+            dayRecords: data.dayRecords || [],
+            todayRecord: null,
+            lastBooking: null
+        };
+
+        // Find today's record
+        const today = new Date().toISOString().split('T')[0];
+        parsed.todayRecord = data.dayRecords?.find(record => record.date === today);
+
+        // Find the most recent booking
+        if (data.dayRecords && data.dayRecords.length > 0) {
+            const latestDay = data.dayRecords[0];
+            if (latestDay.timeBookings && latestDay.timeBookings.length > 0) {
+                parsed.lastBooking = latestDay.timeBookings[latestDay.timeBookings.length - 1];
+            }
+        }
+
+        return parsed;
+    }
+
+    // Get booking key ID by display name
+    function getBookingKeyId(data, displayName) {
+        if (!data || !data.selectableTimeBookingKeys) return null;
+        
+        const key = data.selectableTimeBookingKeys.find(
+            k => k.displayName === displayName
+        );
+        return key ? key.id : null;
+    }
+
     // Wait for the page to load
     function addExtraButtons() {
         // Find the submit button box that contains the "Erfassen" button
@@ -76,8 +139,24 @@
             });
 
             // Add click handler
-            button.addEventListener('click', function() {
+            button.addEventListener('click', async function() {
                 console.log(`${btnConfig.text} clicked`);
+                
+                // Fetch and parse clocking data
+                const rawData = await fetchClockingData();
+                const parsedData = parseClockingData(rawData);
+                
+                if (parsedData) {
+                    console.log('Parsed data:', parsedData);
+                    console.log('Can clock time:', parsedData.canClockTime);
+                    console.log('Today record:', parsedData.todayRecord);
+                    console.log('Last booking:', parsedData.lastBooking);
+                    
+                    // Get the booking key ID for this button
+                    const keyId = getBookingKeyId(rawData, btnConfig.text);
+                    console.log(`Booking key ID for ${btnConfig.text}:`, keyId);
+                }
+                
                 alert(`${btnConfig.text} was clicked!`);
                 // Add your custom logic here for each button
             });
