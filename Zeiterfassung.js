@@ -46,22 +46,52 @@
             selectableKeys: data.selectableTimeBookingKeys || [],
             dayRecords: data.dayRecords || [],
             todayRecord: null,
-            lastBooking: null
+            lastBooking: null,
+            lastBookingKey: null
         };
 
         // Find today's record
         const today = new Date().toISOString().split('T')[0];
         parsed.todayRecord = data.dayRecords?.find(record => record.date === today);
 
-        // Find the most recent booking
-        if (data.dayRecords && data.dayRecords.length > 0) {
-            const latestDay = data.dayRecords[0];
-            if (latestDay.timeBookings && latestDay.timeBookings.length > 0) {
-                parsed.lastBooking = latestDay.timeBookings[latestDay.timeBookings.length - 1];
-            }
+        // Find the most recent booking from today only
+        if (parsed.todayRecord && parsed.todayRecord.timeBookings && parsed.todayRecord.timeBookings.length > 0) {
+            parsed.lastBooking = parsed.todayRecord.timeBookings[parsed.todayRecord.timeBookings.length - 1];
+            parsed.lastBookingKey = parsed.lastBooking.bookingKey;
         }
 
         return parsed;
+    }
+    
+    // Determine which buttons to show based on last booking
+    function getAvailableButtons(lastBookingKey) {
+        // All possible buttons
+        const allButtons = {
+            kommen: { text: 'Kommen', color: '#1976d2', icon: '🏃‍♂️‍➡️' },
+            gehen: { text: 'Gehen', color: '#2e7d32', icon: '🏃‍♂️' },
+            pauseBeginn: { text: 'Pause Beginn', color: '#ed6c02', icon: '⏸️' },
+            pauseEnde: { text: 'Pause Ende', color: '#9c27b0', icon: '⏯️' }
+        };
+        
+        // Determine which buttons to show based on last booking
+        switch(lastBookingKey) {
+            case 'K':  // Kommen
+            case 'MK': // Mobiles Kommen
+                return [allButtons.pauseBeginn, allButtons.gehen];
+            
+            case 'PA': // Pause Beginn
+                return [allButtons.pauseEnde];
+            
+            case 'PE': // Pause Ende
+                return [allButtons.pauseBeginn, allButtons.gehen];
+            
+            case 'G':  // Gehen
+            case 'MG': // Mobiles Gehen
+                return [allButtons.kommen];
+            
+            default:   // No booking or unknown
+                return [allButtons.kommen];
+        }
     }
 
     // Get booking key ID by display name
@@ -193,7 +223,10 @@
         }
 
         // Check if buttons already added
-        if (submitButtonBox.querySelector('.extra-buttons-container')) {
+        const existingContainer = submitButtonBox.querySelector('.extra-buttons-container');
+        if (existingContainer) {
+            // Container exists, update buttons instead of returning
+            updateButtons();
             return true;
         }
 
@@ -220,15 +253,27 @@
         `;
         buttonContainer.appendChild(workTimeLabel);
 
-        // Function to update work time label
-        async function updateWorkTimeLabel() {
-            const rawData = await fetchClockingData();
-            const parsedData = parseClockingData(rawData);
-            
+        // Create button container that will hold dynamic buttons
+        const dynamicButtonContainer = document.createElement('div');
+        dynamicButtonContainer.className = 'dynamic-button-container';
+        dynamicButtonContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+        buttonContainer.appendChild(dynamicButtonContainer);
+
+        // Cache for the last fetched data
+        let cachedParsedData = null;
+        
+        // Function to update work time label (with optional fetch)
+        async function updateWorkTimeLabel(forceFetch = false) {
             const contentDiv = workTimeLabel.querySelector('.work-time-content');
             
-            if (parsedData && parsedData.todayRecord) {
-                const workTime = calculateRemainingWorkTime(parsedData.todayRecord);
+            // Fetch new data if forced or no cached data
+            if (forceFetch || !cachedParsedData) {
+                const rawData = await fetchClockingData();
+                cachedParsedData = parseClockingData(rawData);
+            }
+            
+            if (cachedParsedData && cachedParsedData.todayRecord) {
+                const workTime = calculateRemainingWorkTime(cachedParsedData.todayRecord);
                 
                 const remainingHours = Math.floor(workTime.remainingMinutes / 60);
                 const remainingMins = workTime.remainingMinutes % 60;
@@ -249,86 +294,108 @@
             }
         }
 
+        // Function to update buttons based on current state
+        async function updateButtons() {
+            const rawData = await fetchClockingData();
+            const parsedData = parseClockingData(rawData);
+            
+            // Update cached data
+            cachedParsedData = parsedData;
+            
+            const container = document.querySelector('.dynamic-button-container');
+            if (!container) return;
+            
+            // Clear existing buttons
+            container.innerHTML = '';
+            
+            // Get buttons to show
+            const buttons = getAvailableButtons(parsedData?.lastBookingKey);
+            
+            // Create each button
+            buttons.forEach((btnConfig) => {
+                const button = document.createElement('button');
+                button.className = 'MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-sizeMedium MuiButton-fullWidth';
+                button.type = 'button';
+                button.style.cssText = `
+                    background-color: ${btnConfig.color};
+                    color: white;
+                    padding: 6px 16px;
+                    min-height: 36px;
+                    border-radius: 4px;
+                    border: none;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: 500;
+                    text-transform: none;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 8px;
+                    transition: background-color 0.3s;
+                `;
+
+                button.innerHTML = `
+                    <span style="font-size: 18px;">${btnConfig.icon}</span>
+                    <span>${btnConfig.text}</span>
+                `;
+
+                // Add hover effect
+                button.addEventListener('mouseenter', function() {
+                    this.style.filter = 'brightness(1.1)';
+                });
+                button.addEventListener('mouseleave', function() {
+                    this.style.filter = 'brightness(1)';
+                });
+
+                // Add click handler
+                button.addEventListener('click', async function() {
+                    console.log(`${btnConfig.text} clicked`);
+                    
+                    // Fetch and parse clocking data
+                    const rawData = await fetchClockingData();
+                    const parsedData = parseClockingData(rawData);
+                    
+                    if (parsedData) {
+                        console.log('Parsed data:', parsedData);
+                        console.log('Can clock time:', parsedData.canClockTime);
+                        console.log('Today record:', parsedData.todayRecord);
+                        console.log('Last booking:', parsedData.lastBooking);
+                        
+                        // Calculate remaining work time
+                        const workTime = calculateRemainingWorkTime(parsedData.todayRecord);
+                        console.log('Work time calculation:', workTime);
+                        
+                        // Get the booking key ID for this button
+                        const keyId = getBookingKeyId(rawData, btnConfig.text);
+                        console.log(`Booking key ID for ${btnConfig.text}:`, keyId);
+                        
+                        // Update the work time label and buttons after button click
+                        setTimeout(() => {
+                            updateWorkTimeLabel(true); // Force fetch after button click
+                            updateButtons();
+                        }, 1000);
+                    }
+                    // Add your custom logic here for each button
+                });
+
+                container.appendChild(button);
+            });
+        }
+
         // Initial update
-        updateWorkTimeLabel();
+        updateWorkTimeLabel(true); // Force fetch on initial load
+        updateButtons();
 
-        // Update every minute
-        setInterval(updateWorkTimeLabel, 60000);
-
-        // Button configurations
-        const buttons = [
-            { text: 'Kommen', color: '#1976d2', icon: '🏃‍♂️‍➡️' },
-            { text: 'Gehen', color: '#2e7d32', icon: '🏃‍♂️' },
-            { text: 'Pause Beginn', color: '#ed6c02', icon: '⏸️' },
-            { text: 'Pause Ende', color: '#9c27b0', icon: '⏯️' }
-        ];
-
-        // Create each button
-        buttons.forEach((btnConfig, index) => {
-            const button = document.createElement('button');
-            button.className = 'MuiButtonBase-root MuiButton-root MuiButton-contained MuiButton-sizeMedium MuiButton-fullWidth';
-            button.type = 'button';
-            button.style.cssText = `
-                background-color: ${btnConfig.color};
-                color: white;
-                padding: 6px 16px;
-                min-height: 36px;
-                border-radius: 4px;
-                border: none;
-                cursor: pointer;
-                font-size: 16px;
-                font-weight: 500;
-                text-transform: none;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                gap: 8px;
-                transition: background-color 0.3s;
-            `;
-
-            button.innerHTML = `
-                <span style="font-size: 18px;">${btnConfig.icon}</span>
-                <span>${btnConfig.text}</span>
-            `;
-
-            // Add hover effect
-            button.addEventListener('mouseenter', function() {
-                this.style.filter = 'brightness(1.1)';
-            });
-            button.addEventListener('mouseleave', function() {
-                this.style.filter = 'brightness(1)';
-            });
-
-            // Add click handler
-            button.addEventListener('click', async function() {
-                console.log(`${btnConfig.text} clicked`);
-                
-                // Fetch and parse clocking data
-                const rawData = await fetchClockingData();
-                const parsedData = parseClockingData(rawData);
-                
-                if (parsedData) {
-                    console.log('Parsed data:', parsedData);
-                    console.log('Can clock time:', parsedData.canClockTime);
-                    console.log('Today record:', parsedData.todayRecord);
-                    console.log('Last booking:', parsedData.lastBooking);
-                    
-                    // Calculate remaining work time
-                    const workTime = calculateRemainingWorkTime(parsedData.todayRecord);
-                    console.log('Work time calculation:', workTime);
-                    
-                    // Get the booking key ID for this button
-                    const keyId = getBookingKeyId(rawData, btnConfig.text);
-                    console.log(`Booking key ID for ${btnConfig.text}:`, keyId);
-                    
-                    // Update the work time label after button click
-                    setTimeout(updateWorkTimeLabel, 1000);
-                }
-                // Add your custom logic here for each button
-            });
-
-            buttonContainer.appendChild(button);
-        });
+        // Update display every minute (recalculate with cached data)
+        setInterval(() => {
+            updateWorkTimeLabel(false); // Don't fetch, just recalculate
+        }, 60000);
+        
+        // Fetch fresh data every 5 minutes
+        setInterval(() => {
+            updateWorkTimeLabel(true); // Force fetch
+            updateButtons();
+        }, 300000);
 
         // Insert the button container after the submit button box
         submitButtonBox.parentNode.insertBefore(buttonContainer, submitButtonBox.nextSibling);
