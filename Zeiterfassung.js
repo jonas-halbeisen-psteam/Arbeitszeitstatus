@@ -14,7 +14,7 @@
     // Fetch clocking data from the API
     async function fetchClockingData() {
         try {
-            const response = await fetch('/horizon/modules/pzw/widgets/clockings', {
+            const response = await fetch(window.location.origin + '/horizon/modules/pzw/widgets/clockings', {
                 method: 'GET',
                 credentials: 'same-origin',
                 headers: {
@@ -72,6 +72,114 @@
             k => k.displayName === displayName
         );
         return key ? key.id : null;
+    }
+
+    // Calculate remaining work time for today
+    function calculateRemainingWorkTime(todayRecord) {
+        if (!todayRecord || !todayRecord.timeBookings) {
+            return { remainingMinutes: 480, requiredMinutes: 480, message: 'No bookings found for today' };
+        }
+
+        const bookings = todayRecord.timeBookings;
+        let requiredMinutes = 480; // 8 hours = 480 minutes
+        let workedMinutes = 0;
+        let currentlyWorking = false;
+        let pauseStartTime = null;
+        let totalPauseMinutes = 0;
+        let hasPauseAfter1300 = false;
+
+        // Helper function to convert time string to minutes since midnight
+        function timeToMinutes(timeStr) {
+            if (!timeStr) return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return hours * 60 + minutes;
+        }
+
+        // Sort bookings by time
+        const sortedBookings = [...bookings].sort((a, b) => {
+            const timeA = a.time || '00:00:00';
+            const timeB = b.time || '00:00:00';
+            return timeToMinutes(timeA) - timeToMinutes(timeB);
+        });
+
+        let workStartTime = null;
+
+        // Process each booking
+        for (const booking of sortedBookings) {
+            const key = booking.bookingKey;
+            const time = booking.time;
+
+            if (!time) continue;
+
+            const timeInMinutes = timeToMinutes(time);
+
+            // Check if it's a pause after 13:00 (780 minutes)
+            if (key === 'PA' && timeInMinutes >= 780) {
+                hasPauseAfter1300 = true;
+            }
+
+            if (key === 'K' || key === 'MK') {
+                // Kommen (arrival)
+                workStartTime = timeInMinutes;
+                currentlyWorking = true;
+            } else if (key === 'G' || key === 'MG') {
+                // Gehen (leaving)
+                if (workStartTime !== null) {
+                    workedMinutes += timeInMinutes - workStartTime;
+                    workStartTime = null;
+                }
+                currentlyWorking = false;
+            } else if (key === 'PA') {
+                // Pause Beginn
+                if (workStartTime !== null && currentlyWorking) {
+                    workedMinutes += timeInMinutes - workStartTime;
+                    pauseStartTime = timeInMinutes;
+                    workStartTime = null;
+                }
+            } else if (key === 'PE') {
+                // Pause Ende
+                if (pauseStartTime !== null) {
+                    totalPauseMinutes += timeInMinutes - pauseStartTime;
+                    workStartTime = timeInMinutes;
+                    pauseStartTime = null;
+                }
+            }
+        }
+
+        // If currently working, calculate time until now
+        if (workStartTime !== null && currentlyWorking) {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            workedMinutes += currentMinutes - workStartTime;
+        }
+
+        // Add 30 minutes to required time if no pause after 13:00
+        if (!hasPauseAfter1300) {
+            requiredMinutes += 30; // 8.5 hours
+        }
+
+        const remainingMinutes = Math.max(0, requiredMinutes - workedMinutes);
+
+        // Calculate end time
+        let endTime = '';
+        if (currentlyWorking && workStartTime !== null) {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const endMinutes = currentMinutes + remainingMinutes;
+            const endHours = Math.floor(endMinutes / 60) % 24;
+            const endMins = endMinutes % 60;
+            endTime = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
+        }
+
+        return {
+            remainingMinutes,
+            requiredMinutes,
+            workedMinutes,
+            hasPauseAfter1300,
+            currentlyWorking,
+            endTime,
+            message: `Worked: ${Math.floor(workedMinutes / 60)}h ${workedMinutes % 60}m / Required: ${Math.floor(requiredMinutes / 60)}h ${requiredMinutes % 60}m`
+        };
     }
 
     // Wait for the page to load
@@ -152,12 +260,14 @@
                     console.log('Today record:', parsedData.todayRecord);
                     console.log('Last booking:', parsedData.lastBooking);
                     
+                    // Calculate remaining work time
+                    const workTime = calculateRemainingWorkTime(parsedData.todayRecord);
+                    console.log('Work time calculation:', workTime);
+                    
                     // Get the booking key ID for this button
                     const keyId = getBookingKeyId(rawData, btnConfig.text);
                     console.log(`Booking key ID for ${btnConfig.text}:`, keyId);
                 }
-                
-                alert(`${btnConfig.text} was clicked!`);
                 // Add your custom logic here for each button
             });
 
