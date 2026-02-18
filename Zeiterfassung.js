@@ -202,6 +202,59 @@
         buttonContainer.className = 'extra-buttons-container';
         buttonContainer.style.cssText = 'display: flex; flex-direction: column; gap: 8px; margin-top: 12px;';
 
+        // Create work time info label
+        const workTimeLabel = document.createElement('div');
+        workTimeLabel.className = 'work-time-label';
+        workTimeLabel.style.cssText = `
+            background-color: #f5f5f5;
+            border-left: 4px solid #1976d2;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #2E3233;
+            margin-bottom: 8px;
+        `;
+        workTimeLabel.innerHTML = `
+            <div style="font-weight: 500; margin-bottom: 4px;">⏱️ Work Time Status</div>
+            <div class="work-time-content" style="font-size: 13px; color: #555;">Loading...</div>
+        `;
+        buttonContainer.appendChild(workTimeLabel);
+
+        // Function to update work time label
+        async function updateWorkTimeLabel() {
+            const rawData = await fetchClockingData();
+            const parsedData = parseClockingData(rawData);
+            
+            const contentDiv = workTimeLabel.querySelector('.work-time-content');
+            
+            if (parsedData && parsedData.todayRecord) {
+                const workTime = calculateRemainingWorkTime(parsedData.todayRecord);
+                
+                const remainingHours = Math.floor(workTime.remainingMinutes / 60);
+                const remainingMins = workTime.remainingMinutes % 60;
+                
+                let statusText = '';
+                if (workTime.remainingMinutes === 0) {
+                    statusText = `<div style="color: #2e7d32; font-weight: 500;">Required time fulfilled!</div>`;
+                } else {
+                    statusText = `<div>Remaining: ${remainingHours}h ${remainingMins}m</div>`;
+                    if (workTime.endTime) {
+                        statusText += `<div>Finish at: ${workTime.endTime}</div>`;
+                    }
+                }
+                
+                contentDiv.innerHTML = statusText;
+            } else {
+                contentDiv.innerHTML = `<div style="color: #666;">No data available for today</div>`;
+            }
+        }
+
+        // Initial update
+        updateWorkTimeLabel();
+
+        // Update every minute
+        setInterval(updateWorkTimeLabel, 60000);
+
         // Button configurations
         const buttons = [
             { text: 'Kommen', color: '#1976d2', icon: '🏃‍♂️‍➡️' },
@@ -267,6 +320,9 @@
                     // Get the booking key ID for this button
                     const keyId = getBookingKeyId(rawData, btnConfig.text);
                     console.log(`Booking key ID for ${btnConfig.text}:`, keyId);
+                    
+                    // Update the work time label after button click
+                    setTimeout(updateWorkTimeLabel, 1000);
                 }
                 // Add your custom logic here for each button
             });
