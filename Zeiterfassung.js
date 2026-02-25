@@ -1,8 +1,8 @@
 // ==UserScript==
-// @name         Zeiterfassung Work Time
+// @name         Arbeitszeitstatus
 // @namespace    http://tampermonkey.net/
 // @version      1.0
-// @description  Shows remaining work time below the "Erfassen" button
+// @description  Zeigt die verbleibende Arbeitszeit sowie anfallende Überstunden unterhalb des "Erfassen"-Buttons an
 // @author       You
 // @match        https://psteam.summit-services.de/*
 // @grant        none
