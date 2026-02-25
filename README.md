@@ -28,7 +28,7 @@ Das Script zeigt unterhalb des „Erfassen"-Buttons automatisch die verbleibende
 1. Tampermonkey im Browser installieren
 2. Auf den folgenden Button klicken:
 
-[![Installieren](https://img.shields.io/badge/Tampermonkey-Installieren-00485B?style=for-the-badge&logo=tampermonkey)](https://raw.githubusercontent.com/jonas-halbeisen-psteam/Arbeitszeitstatus/refs/heads/main/Zeiterfassung.js)
+[![Installieren](https://img.shields.io/badge/Tampermonkey-Installieren-00485B?style=for-the-badge&logo=tampermonkey)](https://raw.githubusercontent.com/jonas-halbeisen-psteam/Arbeitszeitstatus/refs/heads/main/Zeiterfassung.user.js)
 
 ---
 
