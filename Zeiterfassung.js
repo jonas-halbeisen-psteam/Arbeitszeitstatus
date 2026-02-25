@@ -243,9 +243,6 @@
         // Update display every minute (recalculate with cached data)
         setInterval(() => updateWorkTimeLabel(false), 60000);
 
-        // Fetch fresh data every 5 minutes
-        setInterval(() => updateWorkTimeLabel(true), 300000);
-
         // Insert the container after the submit button box
         submitButtonBox.parentNode.insertBefore(container, submitButtonBox.nextSibling);
         return true;
