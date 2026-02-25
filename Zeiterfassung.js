@@ -138,6 +138,7 @@
         }
 
         const remainingMinutes = Math.max(0, requiredMinutes - workedMinutes);
+        const overtimeMinutes = Math.max(0, workedMinutes - requiredMinutes);
 
         // Calculate end time
         let endTime = '';
@@ -152,6 +153,7 @@
 
         return {
             remainingMinutes,
+            overtimeMinutes,
             requiredMinutes,
             workedMinutes,
             hasPauseAfter1300,
@@ -216,8 +218,12 @@
                 const remainingMins = workTime.remainingMinutes % 60;
 
                 let statusText = '';
-                if (workTime.remainingMinutes === 0) {
+                if (workTime.remainingMinutes === 0 && workTime.workedMinutes >= workTime.requiredMinutes) {
+                    const overtimeMinutes = workTime.workedMinutes - workTime.requiredMinutes;
+                    const overtimeHours = Math.floor(overtimeMinutes / 60);
+                    const overtimeMins = overtimeMinutes % 60;
                     statusText = `<div style="color: #2e7d32; font-weight: 500;">Sollarbeitszeit erfüllt!</div>`;
+                    statusText += `<div style="color: #2e7d32; margin-top: 4px;">Überstunden: +${overtimeHours}h ${overtimeMins}m</div>`;
                 } else {
                     statusText = `<div>Verbleibend: ${remainingHours}h ${remainingMins}m</div>`;
                     if (workTime.endTime) {
