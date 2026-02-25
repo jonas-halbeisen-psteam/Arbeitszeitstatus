@@ -4,7 +4,7 @@
 // @version      1.0
 // @description  Zeigt die verbleibende Arbeitszeit sowie anfallende Überstunden unterhalb des "Erfassen"-Buttons an
 // @author       You
-// @match        https://psteam.summit-services.de/*
+// @match        https://psteam.summit-services.de/horizon/
 // @grant        none
 // ==/UserScript==
 
