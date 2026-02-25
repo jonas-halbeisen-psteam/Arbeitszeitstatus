@@ -191,8 +191,8 @@
             color: #2E3233;
         `;
         workTimeLabel.innerHTML = `
-            <div style="font-weight: 500; margin-bottom: 4px;">⏱️ Work Time Status</div>
-            <div class="work-time-content" style="font-size: 13px; color: #555;">Loading...</div>
+            <div style="font-weight: 500; margin-bottom: 4px;">⏱️ Arbeitszeitstatus</div>
+            <div class="work-time-content" style="font-size: 13px; color: #555;">Lädt...</div>
         `;
         container.appendChild(workTimeLabel);
 
@@ -217,17 +217,17 @@
 
                 let statusText = '';
                 if (workTime.remainingMinutes === 0) {
-                    statusText = `<div style="color: #2e7d32; font-weight: 500;">Required time fulfilled!</div>`;
+                    statusText = `<div style="color: #2e7d32; font-weight: 500;">Sollarbeitszeit erfüllt!</div>`;
                 } else {
-                    statusText = `<div>Remaining: ${remainingHours}h ${remainingMins}m</div>`;
+                    statusText = `<div>Verbleibend: ${remainingHours}h ${remainingMins}m</div>`;
                     if (workTime.endTime) {
-                        statusText += `<div>Finish at: ${workTime.endTime}</div>`;
+                        statusText += `<div>Feierabend um: ${workTime.endTime}</div>`;
                     }
                 }
 
                 contentDiv.innerHTML = statusText;
             } else {
-                contentDiv.innerHTML = `<div style="color: #666;">No data available for today</div>`;
+                contentDiv.innerHTML = `<div style="color: #666;">Keine Daten für heute verfügbar</div>`;
             }
         }
 
