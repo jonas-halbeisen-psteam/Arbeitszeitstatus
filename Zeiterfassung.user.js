@@ -8,7 +8,7 @@
 // @grant        none
 // ==/UserScript==
 
-(function() {
+(function () {
     'use strict';
 
     // Fetch clocking data from the API
@@ -52,7 +52,7 @@
 
         return parsed;
     }
-    
+
     // Calculate remaining work time for today
     function calculateRemainingWorkTime(todayRecord) {
         if (!todayRecord || !todayRecord.timeBookings) {
@@ -65,7 +65,7 @@
         let currentlyWorking = false;
         let pauseStartTime = null;
         let totalPauseMinutes = 0;
-        let hasPauseAfter1300 = false;
+        let hasPause = false;
 
         // Helper function to convert time string to minutes since midnight
         function timeToMinutes(timeStr) {
@@ -92,9 +92,9 @@
 
             const timeInMinutes = timeToMinutes(time);
 
-            // Check if it's a pause after 13:00 (780 minutes)
-            if (key === 'PA' && timeInMinutes >= 780) {
-                hasPauseAfter1300 = true;
+            // Check if it's a pause
+            if (key === 'PA') {
+                hasPause = true;
             }
 
             if (key === 'K' || key === 'MK') {
@@ -133,7 +133,7 @@
         }
 
         // Add 30 minutes to required time if no pause after 13:00
-        if (!hasPauseAfter1300) {
+        if (!hasPause) {
             requiredMinutes += 30; // 8.5 hours
         }
 
@@ -156,7 +156,7 @@
             overtimeMinutes,
             requiredMinutes,
             workedMinutes,
-            hasPauseAfter1300,
+            hasPause,
             currentlyWorking,
             endTime,
             message: `Worked: ${Math.floor(workedMinutes / 60)}h ${workedMinutes % 60}m / Required: ${Math.floor(requiredMinutes / 60)}h ${requiredMinutes % 60}m`
@@ -167,7 +167,7 @@
     function addWorkTimeLabel() {
         // Find the submit button box that contains the "Erfassen" button
         const submitButtonBox = document.querySelector('[data-testid="clockingWidgetSubmitButtonBox"]');
-        
+
         if (!submitButtonBox) {
             return false;
         }
@@ -251,7 +251,7 @@
     // Try to add immediately
     if (!addWorkTimeLabel()) {
         // If not found, wait for DOM changes
-        const observer = new MutationObserver(function(mutations) {
+        const observer = new MutationObserver(function (mutations) {
             if (addWorkTimeLabel()) {
                 observer.disconnect();
             }
