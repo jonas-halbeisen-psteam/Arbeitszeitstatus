@@ -6,6 +6,7 @@
 // @author       You
 // @match        https://psteam.summit-services.de/horizon/
 // @grant        none
+// @downloadURL  https://raw.githubusercontent.com/jonas-halbeisen-psteam/Arbeitszeitstatus/refs/heads/main/Zeiterfassung.user.js
 // ==/UserScript==
 
 (function () {
