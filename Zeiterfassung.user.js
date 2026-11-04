@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Arbeitszeitstatus
 // @namespace    http://tampermonkey.net/
-// @version      1.3
+// @version      1.4
 // @description  Zeigt die verbleibende Arbeitszeit sowie anfallende Überstunden unterhalb des "Erfassen"-Buttons an
 // @author       You
 // @match        https://psteam.summit-services.de/horizon/*
@@ -26,7 +26,10 @@
 
         for (const item of listItems) {
             const label = item.querySelector('.css-1fo1l1c');
-            if (label && label.textContent.trim() === 'Heute') {
+            const text = label ? label.textContent.trim() : '';
+            const d = new Date();
+            const todayDate = `${String(d.getDate()).padStart(2, '0')}.${String(d.getMonth() + 1).padStart(2, '0')}.${d.getFullYear()}`;
+            if (['Heute', 'Today', todayDate].includes(text)) {
                 todayItem = item;
                 break;
             }
