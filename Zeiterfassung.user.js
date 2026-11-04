@@ -1,12 +1,13 @@
 // ==UserScript==
 // @name         Arbeitszeitstatus
 // @namespace    http://tampermonkey.net/
-// @version      1.2
+// @version      1.3
 // @description  Zeigt die verbleibende Arbeitszeit sowie anfallende Überstunden unterhalb des "Erfassen"-Buttons an
 // @author       You
 // @match        https://psteam.summit-services.de/horizon/*
 // @grant        none
 // @downloadURL  https://raw.githubusercontent.com/jonas-halbeisen-psteam/Arbeitszeitstatus/refs/heads/main/Zeiterfassung.user.js
+// @updateURL  https://raw.githubusercontent.com/jonas-halbeisen-psteam/Arbeitszeitstatus/refs/heads/main/Zeiterfassung.user.js
 // ==/UserScript==
 
 (function () {
